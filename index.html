@@ -1,17 +1,18 @@
 <style>
-  body{  font-family:sans-serif; background-color:#faf0e6; color:#3d211a;  }
-  .container{  width: 60%; margin: auto;  }
-  .header{  display: flex; align-items:center; gap: 10px;  }
-  img{  width:100px; height:100px; border-radius:10px; margin-left:auto;  }
-  h1{  margin-right:auto;  }
-  .peking{
-    width: 250px;
-    height: auto;
-    position:absolute;
-    bottom: 20px;
-    right:20px;
-    transform:scaleX(-1);
-  }
+    body{  font-family:sans-serif; background-color:#faf0e6; color:#3d211a;  }
+    .container{  width: 60%; margin: auto;  }
+    .header{  display: flex; align-items:center; gap: 10px;  }
+    .header img{  width:100px; height:100px; border-radius:10px; margin-left:auto;  }
+    h1{  margin-right:auto;  }
+    .peking{  width: 250px; height: auto; position:fixed; bottom: 20px; right:20px; transform:scaleX(-1);  }
+    .projcontainer {  width: 100%;  }
+    .projcard {  width: 200px; min-height: 150px; background: #fffcf9; overflow: hidden; border-radius: 10px; 
+                 box-shadow: 2px 4px 20px 0px #0005; transition-duration: 0.4s; margin: 10px; float: left;  }
+    .projcard img {  width: 200px;  }
+    .projcard a {  color: #3d211a;font-weight: 900;text-align: center;width: 100%;display: inline-block;  }
+    .projcard p {  width: 100%; display: inline-block; text-align: center;  }
+    .projcard:hover { box-shadow: 10px 10px 20px 0px #000a; transform: translate(-8px, -8px);  }
+    .projcontainer::after {  content: ""; display: table; clear: both;  }
 </style>
 <div class="container">
 <div class="header"><img src="/duckpfp.png"><h1>cass3role</h1></div>
@@ -21,11 +22,11 @@
 <p>I am Cassie (cass3role). I like coding, specifically apps, programs & websites rather than games, but I am not very good yet. I can code in html, css, and js, and a bit of python. I also like playing games including Geometry Dash and Minecraft. My hardest completion in GD is an extreme demon called Deternary. I also like ducks.</p>
 <h3>Projects</h3>
 <div class="projcontainer">
-  <div class="projcard">
-    <img src="/img/proj/pently.png">
-    <a href="/pently/index.html">Pently</a>
-    <p>A base 5 computer.</p>
-  </div>
+    <div class="projcard">
+        <img src="/img/proj/pently.png">
+        <a href="/pently/index.html">Pently</a>
+        <p>A base 5 computer.</p>
+    </div>
 </div>
 <h3>Contact</h3>
 <p>Discord: @cas3sie<br>
