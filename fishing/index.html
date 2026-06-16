@@ -1,0 +1,1702 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First Person Fishing v1</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .game-container {
+            position: relative;
+            height: 100vh;
+            aspect-ratio: 9 / 16; 
+            max-width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Continuous Day-Night Filter Animation (5-minute loop = 300 seconds) */
+        @keyframes dayNightCycle {
+            /* 06:00 AM - Sunrise (Warm, low-angle orange hue) */
+            0% {
+                filter: brightness(0.8) contrast(1.1) saturate(1.2) hue-rotate(-15deg) sepia(0.2);
+            }
+            /* 08:30 AM - Morning (Clearer skies) */
+            10% {
+                filter: brightness(0.95) contrast(1.0) saturate(1.05) hue-rotate(0deg) sepia(0);
+            }
+            /* 12:00 PM - Noon (Unfiltered natural day) */
+            25% {
+                filter: none;
+            }
+            /* 05:00 PM - Afternoon shading */
+            45% {
+                filter: none;
+            }
+            /* 06:30 PM - Golden Hour / Sunset start */
+            52% {
+                filter: brightness(0.8) contrast(1.15) saturate(1.5) hue-rotate(-25deg) sepia(0.35);
+            }
+            /* 07:30 PM - Late Sunset / Dusk (Deep red/purple) */
+            58% {
+                filter: brightness(0.6) contrast(1.1) saturate(1.1) hue-rotate(0deg) sepia(0.5);
+            }
+            /* 08:30 PM - Transition to Night (Cool deep blues) */
+            65% {
+                filter: brightness(0.3) contrast(0.9) saturate(0.6) hue-rotate(0deg) sepia(0.15);
+            }
+            /* 12:00 AM - Midnight / Deep Night */
+            75% {
+                filter: brightness(0.18) contrast(0.8) saturate(0.4) hue-rotate(0deg) sepia(0.1);
+            }
+            /* 04:30 AM - Late Night / Pre-dawn */
+            90% {
+                filter: brightness(0.18) contrast(0.8) saturate(0.4) hue-rotate(0deg) sepia(0.1);
+            }
+            /* 05:30 AM - Dawn breaking */
+            95% {
+                filter: brightness(0.5) contrast(0.95) saturate(0.8) hue-rotate(-10deg) sepia(0.25);
+            }
+            /* 06:00 AM - Complete 100% Loop Reset */
+            100% {
+                filter: brightness(0.8) contrast(1.1) saturate(1.2) hue-rotate(-15deg) sepia(0.2);
+            }
+        }
+
+        .bg-video, .player-overlay, .aquarium-overlay {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            will-change: filter, transform;
+            animation: dayNightCycle 300s linear infinite;
+        }
+
+        .bg-video {
+            z-index: 1;
+        }
+        .player-overlay {
+            z-index: 2;
+            pointer-events: none;
+            box-shadow: 0 0 100px #000000 inset;
+			transition: filter 0.1s linear, opacity 0.2s linear;
+        }
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        .top-hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            pointer-events: auto;
+            z-index: 15;
+            margin-top: 10px;
+        }
+        .time-clock {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            letter-spacing: 0.05em;
+        }
+        .hud-buttons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .hud-btn {
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: transform 0.15s, background 0.15s;
+        }
+        .hud-btn:active {
+            transform: scale(0.92);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .hud-btn.active-view {
+            background: rgba(46, 213, 115, 0.8);
+            border-color: #2ed573;
+        }
+        .balance-counter {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            color: #ffd700;
+            font-weight: 700;
+            padding: 8px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tracker-container {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 70px;
+            height: 280px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 16px;
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 6px;
+            box-sizing: border-box;
+            pointer-events: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 20;
+        }
+        .tracker-track {
+            position: relative;
+            width: 16px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .reel-zone {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 50px; 
+            background: rgba(46, 213, 115, 0.65);
+            border-top: 2px solid #2ed573;
+            border-bottom: 2px solid #2ed573;
+            box-shadow: 0 0 12px rgba(46, 213, 115, 0.5);
+            bottom: 0px; 
+            border-radius: 4px;
+            will-change: bottom, height;
+        }
+        .fish-target {
+            position: absolute;
+            left: -4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            bottom: 50px; 
+            will-change: bottom;
+            z-index: 5;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            transition: transform 0.1s ease;
+        }
+        .reel-progress-container {
+            width: 32px;
+            height: 32px;
+            position: relative;
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.05s;
+            transform-origin: 50% 50%;
+        }
+        .catch-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        .catch-card {
+            background: linear-gradient(145deg, #1e272e, #0f1418);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 320px;
+            padding: 28px;
+            box-sizing: border-box;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .catch-overlay.active {
+            display: flex;
+        }
+        .catch-overlay.active .catch-card {
+            transform: scale(1);
+        }
+        .rarity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+        .rarity-common { background: #8e8e93; color: #fff; }
+        .rarity-uncommon { background: #34c759; color: #fff; }
+        .rarity-rare { background: #007aff; color: #fff; }
+        .rarity-epic { background: #af52de; color: #fff; }
+        .rarity-legendary { background: #ff9500; color: #fff; box-shadow: 0 0 10px rgba(255,149,0,0.5); }
+        .rarity-mythic { background: #ff3b30; color: #fff; box-shadow: 0 0 15px rgba(255,59,48,0.7); }
+        .fish-emoji {
+            font-size: 64px;
+            margin: 12px 0;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+            display: inline-block;
+            animation: swim 3s ease-in-out infinite;
+        }
+        .fish-emoji img {
+            width:100%;
+        }
+        @keyframes swim {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .fish-name {
+            font-size: 22px;
+            font-weight: 800;
+            margin: 6px 0;
+            letter-spacing: -0.01em;
+        }
+        .fish-spec {
+            font-size: 14px;
+            color: #a4b0be;
+            margin-bottom: 8px;
+        }
+        .fish-value-tag {
+            font-size: 16px;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 24px;
+        }
+        .keep-button {
+            background: #2ed573;
+            color: #ffffff;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.4);
+            transition: transform 0.2s, background 0.2s;
+            pointer-events: auto;
+            width: 100%;
+        }
+        .keep-button:active {
+            transform: scale(0.97);
+            background: #26af5f;
+        }
+        .flash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+        .flash-active {
+            animation: flashAnim 0.3s ease-out;
+        }
+        @keyframes flashAnim {
+            0% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+        .menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(16px);
+            z-index: 80;
+            display: none; 
+            flex-direction: column;
+            padding: 24px;
+            box-sizing: border-box;
+            color: #ffffff;
+        }
+        .menu-overlay.active {
+            display: flex;
+        }
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .menu-title {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .close-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .menu-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #a4b0be;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+        .menu-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .menu-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .menu-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        .menu-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        .inventory-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .sell-all-btn {
+            background: #ffd700;
+            color: #000000;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(255,215,0,0.3);
+        }
+        .sell-all-btn:active {
+            transform: scale(0.96);
+        }
+        .empty-state {
+            text-align: center;
+            color: #a4b0be;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+        .inventory-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .inventory-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-details {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .item-icon {
+            font-size: 28px;
+        }
+        .item-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .item-name {
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .item-sub {
+            font-size: 11px;
+            color: #a4b0be;
+            margin-top: 2px;
+        }
+        .item-price {
+            color: #ffd700;
+            font-weight: 700;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+        .item-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .sell-btn {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            color: #ffd700;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sell-btn:active {
+            transform: scale(0.95);
+        }
+        .add-tank-btn {
+            background: rgba(46, 213, 115, 0.15);
+            border: 1px solid rgba(46, 213, 115, 0.4);
+            color: #2ed573;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .add-tank-btn:active {
+            transform: scale(0.95);
+        }
+        .bestiary-section-title {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #a4b0be;
+            margin: 18px 0 10px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .bestiary-section-title:first-child {
+            margin-top: 0;
+        }
+        .bestiary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .bestiary-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+        .bestiary-card.locked {
+            background: rgba(255, 255, 255, 0.01);
+            border-color: rgba(255, 255, 255, 0.03);
+            opacity: 0.45;
+        }
+        .bestiary-emoji {
+            font-size: 24px;
+        }
+        .bestiary-card.locked .bestiary-emoji {
+            filter: grayscale(100%);
+        }
+        .bestiary-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .bestiary-name {
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bestiary-card.locked .bestiary-name {
+            color: #747d8c;
+            letter-spacing: 0.05em;
+        }
+        .bestiary-count {
+            font-size: 10px;
+            color: #a4b0be;
+            margin-top: 2px;
+        }
+        .shop-section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #ffd700;
+            margin: 16px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+        }
+        .shop-section-title:first-child {
+            margin-top: 0;
+        }
+        .shop-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .shop-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .shop-item-details {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+        .shop-item-icon {
+            font-size: 26px;
+        }
+        .shop-item-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .shop-item-name {
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .shop-item-desc {
+            font-size: 11px;
+            color: #a4b0be;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+        .shop-buy-btn {
+            background: #2ed573;
+            color: #ffffff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(46, 213, 115, 0.2);
+            white-space: nowrap;
+        }
+        .shop-buy-btn:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .shop-buy-btn.owned {
+            background: rgba(255, 255, 255, 0.1);
+            color: #a4b0be;
+            cursor: default;
+            box-shadow: none;
+        }
+        .start-menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000aa;
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            box-sizing: border-box;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .start-menu-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .menu-title-main {
+            font-size: 32px;
+            font-weight: 900;
+            color: #ffffff;
+            text-align: center;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .menu-subtitle {
+            font-size: 14px;
+            font-weight: 500;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 48px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .play-button {
+            background: linear-gradient(135deg, #2ed573, #26af5f);
+            color: #ffffff;
+            border: none;
+            padding: 16px 48px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(46, 213, 115, 0.4);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .play-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 4px 10px rgba(46, 213, 115, 0.2);
+        }
+
+        /* Aquarium Screen Overlay Style */
+        .aquarium-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+            display: none;
+        }
+        .aquarium-overlay.active {
+            display: block;
+            pointer-events: auto;
+            background: rgba(0, 116, 228, 0.2);
+            box-shadow: 0 0 80px rgba(0, 210, 255, 0.3) inset;
+        }
+        .aquarium-fish {
+            position: absolute;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            user-select: none;
+            pointer-events: auto;
+            will-change: left, top;
+        }
+        .aquarium-fish img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.2s linear;
+        }
+        /* Tooltip style */
+        .fish-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: white;
+            font-size: 11px;
+            pointer-events: none;
+            display: none;
+            z-index: 90;
+            width: max-content;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transform: translate(-50%, -110%);
+        }
+        .aquarium-fish:hover .fish-tooltip {
+            display: block;
+        }
+        .tooltip-title {
+            font-weight: 800;
+            color: #ffd700;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" id="gameContainer">
+        <video class="bg-video" id="bgVideo" src="bg.mp4" autoplay loop muted playsinline></video>
+        
+        <!-- Aquarium Visual Environment -->
+        <div class="aquarium-overlay" id="aquariumOverlay"></div>
+
+        <img class="player-overlay" id="player" src="player.png" alt="Player View">
+        <div class="flash-overlay" id="flash"></div>
+        <div class="ui-layer">
+            <div class="top-hud">
+                <div class="hud-buttons">
+                    <div class="balance-counter">
+                        $<span id="balanceText">0.00</span>
+                    </div>
+                    <button class="hud-btn" id="aquariumBtn" title="My Aquarium">🐠</button>
+                    <button class="hud-btn" id="inventoryBtn" title="Inventory Bag">💼</button>
+                    <button class="hud-btn" id="shopBtn" title="Fisherman Shop">🛒</button>
+                </div>
+				<div class="time-clock" id="timeClock">
+                    06:00 AM
+                </div>
+            </div>
+            <div class="tracker-container" id="trackerWidget">
+                <div class="tracker-track">
+                    <div class="reel-zone" id="reelZone"></div>
+                    <div class="fish-target" id="fishTarget">🐟</div>
+                </div>
+                <div class="reel-progress-container">
+                    <svg class="progress-ring" width="32" height="32">
+                        <circle class="progress-ring__circle" stroke="#2ed573" stroke-width="4" fill="transparent" r="14" cx="16" cy="16"/>
+                        <circle stroke="rgba(255,255,255,0.1)" stroke-width="4" fill="transparent" r="14" cx="16" cy="16"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="menu-overlay" id="menuOverlay">
+            <div class="menu-header">
+                <span class="menu-title" id="menuTitle">Adventure Bag</span>
+                <button class="close-btn" id="closeMenuBtn">✕</button>
+            </div>
+            <div class="menu-tabs" id="menuTabs">
+                <button class="tab-btn active" id="tabInventory">🎒 Bucket</button>
+                <button class="tab-btn" id="tabBestiary">📜 Log Book</button>
+                <button class="tab-btn" id="tabShop" style="display:none;">🛒 Shop</button>
+            </div>
+            <div class="menu-content">
+                <div class="tab-panel active" id="panelInventory">
+                    <div class="inventory-summary">
+                        <span>Total Items: <strong id="bucketCount">0</strong></span>
+                        <button class="sell-all-btn" id="sellAllBtn">Sell All</button>
+                    </div>
+                    <div class="empty-state" id="inventoryEmptyState">
+                        Your bucket is empty!<br>Cast a line to start catching.
+                    </div>
+                    <div class="inventory-list" id="inventoryList"></div>
+                </div>
+                <div class="tab-panel" id="panelBestiary">
+                    <div id="bestiaryContainer"></div>
+                </div>
+                <div class="tab-panel" id="panelShop">
+                    <div class="shop-section-title">Fishing Rods</div>
+                    <div class="shop-list" id="shopRodsContainer"></div>
+                    <div class="shop-section-title">Premium Baits</div>
+                    <div class="shop-list" id="shopBaitContainer"></div>
+                </div>
+            </div>
+        </div>
+        <div class="catch-overlay" id="catchOverlay">
+            <div class="catch-card">
+                <div class="rarity-badge" id="rewardRarity">Rare</div>
+                <br>
+                <div class="fish-emoji" id="rewardEmoji"><img id="rewardImg" src="" alt="Fish visual"></div>
+                <div class="fish-name" id="rewardName">Mahi Mahi</div>
+                <div class="fish-spec" id="rewardSpec">Weight: 24.3 lbs</div>
+                <div class="fish-value-tag" id="rewardValue">Value: $0.00</div>
+                <button class="keep-button" id="keepBtn">Keep Fish</button>
+            </div>
+        </div>
+        <div class="start-menu-overlay" id="startMenu">
+            <h1 class="menu-title-main">First Person Fishing</h1>
+            <p class="menu-subtitle">By cass3role</p>
+            <button class="play-button" id="playBtn">Play Game</button>
+        </div>
+    </div>
+    <script>
+        const p_img = document.getElementById('player');
+        const g_cnt = document.getElementById('gameContainer');
+        const flsh = document.getElementById('flash');
+        
+        const bal_txt = document.getElementById('balanceText');
+        const inv_btn = document.getElementById('inventoryBtn');
+        const shp_btn = document.getElementById('shopBtn');
+        const aqua_btn = document.getElementById('aquariumBtn');
+        const aqua_ovr = document.getElementById('aquariumOverlay');
+        const m_ovr = document.getElementById('menuOverlay');
+        const m_ttl = document.getElementById('menuTitle');
+        const cls_btn = document.getElementById('closeMenuBtn');
+        const t_inv = document.getElementById('tabInventory');
+        const t_best = document.getElementById('tabBestiary');
+        const t_shop = document.getElementById('tabShop');
+        const p_inv = document.getElementById('panelInventory');
+        const p_best = document.getElementById('panelBestiary');
+        const p_shop = document.getElementById('panelShop');
+        
+        const bkt_cnt = document.getElementById('bucketCount');
+        const sell_all = document.getElementById('sellAllBtn');
+        const inv_mt = document.getElementById('inventoryEmptyState');
+        const inv_lst = document.getElementById('inventoryList');
+        const best_cnt = document.getElementById('bestiaryContainer');
+        
+        const rod_cnt = document.getElementById('shopRodsContainer');
+        const bait_cnt = document.getElementById('shopBaitContainer');
+        const trk_wdg = document.getElementById('trackerWidget');
+        const rl_zn = document.getElementById('reelZone');
+        const f_tgt = document.getElementById('fishTarget');
+        const p_circ = document.querySelector('.progress-ring__circle');
+        
+        const c_ovr = document.getElementById('catchOverlay');
+        const rew_rar = document.getElementById('rewardRarity');
+        const rew_emo = document.getElementById('rewardEmoji');
+        const rew_img = document.getElementById('rewardImg');
+        const rew_name = document.getElementById('rewardName');
+        const rew_spec = document.getElementById('rewardSpec');
+        const rew_val = document.getElementById('rewardValue');
+        const kp_btn = document.getElementById('keepBtn');
+        const rad = p_circ.r.baseVal.value;
+        const circ = rad * 2 * Math.PI;
+        
+        p_circ.style.strokeDasharray = `${circ} ${circ}`;
+        p_circ.style.strokeDashoffset = circ;
+        
+        function set_prog(pct) {
+            const offset = circ - (pct / 100) * circ;
+            p_circ.style.strokeDashoffset = offset;
+        }
+        
+        let t = 0;
+        const spd = 0.03; 
+        const amp = 10; 
+        const b_scl = 1.027; 
+        let pressing = false; 
+        let state = 'IDLE';
+        let view_mode = 'FISHING'; // FISHING or AQUARIUM
+        let st_tmr = null;
+        let b_tmr = null;
+        let rl_y = 0;         
+        let rl_vel = 0;      
+        const grav = 0.2;       
+        const lift = 0.2;     
+        const max_vel = 2;     
+        let f_y = 50;            
+        let f_tgt_y = 50;      
+        let f_mov_tmr = 0;     
+        let f_spd_f = 1.0; 
+        let catch_prog = 30;    
+        let act_fish = null; 
+        let money = 0;
+        let inv = []; 
+        let aquarium = [];
+        let log_stats = {}; 
+        let own_rods = ['basic_rod'];
+        let act_rod = 'basic_rod';
+        let bait_inv = {
+            glow_worms: 0,
+            neon_lures: 0
+        };
+        let act_bait = null; 
+
+        // Time tracking clock logic
+        let startTime = Date.now();
+		
+		let currentGameHour = 6;
+        
+        function updateClock() {
+            let elapsed = (Date.now() - startTime) / 1000; // seconds elapsed since game load
+            let cycleProgress = (elapsed % 300) / 300; // 0.0 to 1.0 representation of the 5-min cycle
+            
+            // Assume 0% starts at 06:00 AM (Sunrise).
+            let totalMinutesInDay = 1440; // 24 hours * 60 minutes
+            let currentMinutes = (360 + (cycleProgress * totalMinutesInDay)) % totalMinutesInDay;
+            
+            let hours = Math.floor(currentMinutes / 60);
+			currentGameHour = hours;
+            let minutes = Math.floor(currentMinutes % 60);
+            
+            let ampm = hours >= 12 ? 'PM' : 'AM';
+            let displayHours = hours % 12;
+            displayHours = displayHours ? displayHours : 12; // convert 0 to 12
+            let displayMinutes = minutes < 10 ? '0' + minutes : minutes;
+            let displayHoursStr = displayHours < 10 ? '0' + displayHours : displayHours;
+            
+           /* let emoji = '☀️';
+            if (hours >= 5 && hours < 8) emoji = '🌅';      // Sunrise
+            else if (hours >= 8 && hours < 17) emoji = '☀️'; // Day
+            else if (hours >= 17 && hours < 20) emoji = '🌇'; // Sunset
+            else emoji = '🌙';      */                       // Night
+            
+            const timeClock = document.getElementById('timeClock');
+            if (timeClock) {
+                timeClock.innerHTML = `${displayHoursStr}:${displayMinutes} ${ampm}`;
+            }
+        }
+        setInterval(updateClock, 500); // Check half-second to keep text updated
+		
+		function getCurrentTimePeriod() {
+			if (currentGameHour >= 5 && currentGameHour < 8) {
+				return "sunrise";
+			} else if (currentGameHour >= 8 && currentGameHour < 17) {
+				return "day";
+			} else if (currentGameHour >= 17 && currentGameHour < 20) {
+				return "sunset";
+			} else {
+				return "night";
+			}
+		}
+        
+        const FISH_DATABASE = [
+			{ name: "Bluegill", rarity: "Common", emoji: "🐠", minSize: 0.4, maxSize: 1.8, basePrice: 5.00, perLbPrice: 2.00, chance: 35, timeOfDay: "day" },
+			{ name: "Largemouth Bass", rarity: "Common", emoji: "🐟", minSize: 1.5, maxSize: 9.8, basePrice: 6.00, perLbPrice: 2.20, chance: 30, timeOfDay: "day" },
+			{ name: "Yellow Perch", rarity: "Common", emoji: "🐠", minSize: 0.3, maxSize: 1.5, basePrice: 5.00, perLbPrice: 2.50, chance: 25, timeOfDay: "day" },
+			{ name: "Sardine", rarity: "Common", emoji: "🐟", minSize: 0.1, maxSize: 0.5, basePrice: 2.00, perLbPrice: 1.50, chance: 35, timeOfDay: "any" },
+			{ name: "Atlantic Mackerel", rarity: "Common", emoji: "🐟", minSize: 0.8, maxSize: 3.2, basePrice: 4.50, perLbPrice: 1.80, chance: 28, timeOfDay: "day" },
+			{ name: "Black Crappie", rarity: "Common", emoji: "🐠", minSize: 0.5, maxSize: 2.5, basePrice: 5.50, perLbPrice: 2.00, chance: 26, timeOfDay: "sunset" },
+			{ name: "Goldfish", rarity: "Common", emoji: "🧽", minSize: 0.2, maxSize: 1.2, basePrice: 3.00, perLbPrice: 1.00, chance: 20, timeOfDay: "any" },
+			{ name: "Channel Catfish", rarity: "Common", emoji: "🐟", minSize: 2.0, maxSize: 15.0, basePrice: 7.00, perLbPrice: 1.50, chance: 18, timeOfDay: "night" },
+			{ name: "Anchovy", rarity: "Common", emoji: "🐟", minSize: 0.05, maxSize: 0.2, basePrice: 1.50, perLbPrice: 1.00, chance: 35, timeOfDay: "any" },
+			{ name: "Sea Bass", rarity: "Common", emoji: "🐟", minSize: 1.5, maxSize: 8.0, basePrice: 6.50, perLbPrice: 2.10, chance: 28, timeOfDay: "sunset" },
+			{ name: "Pumpkinseed Sunfish", rarity: "Common", emoji: "🐠", minSize: 0.2, maxSize: 1.0, basePrice: 4.50, perLbPrice: 1.80, chance: 25, timeOfDay: "day" },
+			{ name: "Tilapia", rarity: "Common", emoji: "🐟", minSize: 1.0, maxSize: 5.0, basePrice: 5.00, perLbPrice: 1.60, chance: 27, timeOfDay: "day" },
+			{ name: "Common Carp", rarity: "Common", emoji: "🐟", minSize: 2.0, maxSize: 20.0, basePrice: 6.00, perLbPrice: 1.20, chance: 22, timeOfDay: "any" },
+			{ name: "Bullhead Catfish", rarity: "Common", emoji: "🐟", minSize: 0.5, maxSize: 3.0, basePrice: 5.00, perLbPrice: 1.50, chance: 24, timeOfDay: "night" },
+			{ name: "Rock Bass", rarity: "Common", emoji: "🐠", minSize: 0.3, maxSize: 1.5, basePrice: 4.80, perLbPrice: 1.90, chance: 25, timeOfDay: "sunrise" },
+			{ name: "Chub", rarity: "Common", emoji: "🐟", minSize: 0.2, maxSize: 1.1, basePrice: 3.50, perLbPrice: 1.30, chance: 30, timeOfDay: "any" },
+			{ name: "Rainbow Trout", rarity: "Uncommon", emoji: "🐟", minSize: 1.2, maxSize: 7.5, basePrice: 15.00, perLbPrice: 4.00, chance: 20, timeOfDay: "sunrise" },
+			{ name: "Sockeye Salmon", rarity: "Uncommon", emoji: "🐟", minSize: 3.5, maxSize: 14.2, basePrice: 20.00, perLbPrice: 4.50, chance: 15, timeOfDay: "day" },
+			{ name: "Red Snapper", rarity: "Uncommon", emoji: "🐠", minSize: 2.0, maxSize: 18.0, basePrice: 18.00, perLbPrice: 5.00, chance: 15, timeOfDay: "day" },
+			{ name: "Clownfish", rarity: "Uncommon", emoji: "🤡", minSize: 0.1, maxSize: 0.6, basePrice: 12.00, perLbPrice: 3.00, chance: 18, timeOfDay: "day" },
+			{ name: "Lionfish", rarity: "Uncommon", emoji: "🦁", minSize: 0.8, maxSize: 3.5, basePrice: 22.00, perLbPrice: 5.50, chance: 14, timeOfDay: "sunset" },
+			{ name: "Common Octopus", rarity: "Uncommon", emoji: "🐙", minSize: 3.0, maxSize: 22.0, basePrice: 25.00, perLbPrice: 4.00, chance: 12, timeOfDay: "night" },
+			{ name: "Tiger Flounder", rarity: "Uncommon", emoji: "🐟", minSize: 1.0, maxSize: 8.0, basePrice: 16.00, perLbPrice: 3.50, chance: 16, timeOfDay: "any" },
+			{ name: "Walleye", rarity: "Uncommon", emoji: "🐟", minSize: 1.5, maxSize: 12.0, basePrice: 18.00, perLbPrice: 4.20, chance: 15, timeOfDay: "night" },
+			{ name: "Northern Pike", rarity: "Uncommon", emoji: "🐟", minSize: 3.0, maxSize: 18.0, basePrice: 22.00, perLbPrice: 4.00, chance: 13, timeOfDay: "sunrise" },
+			{ name: "Smallmouth Bass", rarity: "Uncommon", emoji: "🐟", minSize: 1.0, maxSize: 6.5, basePrice: 14.00, perLbPrice: 3.80, chance: 17, timeOfDay: "day" },
+			{ name: "Black Sea Bass", rarity: "Uncommon", emoji: "🐟", minSize: 1.2, maxSize: 9.0, basePrice: 16.50, perLbPrice: 4.00, chance: 16, timeOfDay: "sunset" },
+			{ name: "Hermit Crab", rarity: "Uncommon", emoji: "🐚", minSize: 0.1, maxSize: 0.8, basePrice: 10.00, perLbPrice: 2.50, chance: 15, timeOfDay: "night" },
+			{ name: "Squid", rarity: "Uncommon", emoji: "🦑", minSize: 0.5, maxSize: 4.0, basePrice: 15.00, perLbPrice: 3.20, chance: 16, timeOfDay: "night" },
+			{ name: "Glass Shrimp", rarity: "Uncommon", emoji: "🦐", minSize: 0.02, maxSize: 0.15, basePrice: 8.00, perLbPrice: 2.00, chance: 20, timeOfDay: "night" },
+			{ name: "Yellowfin Tuna", rarity: "Rare", emoji: "🐟", minSize: 15.0, maxSize: 120.0, basePrice: 50.00, perLbPrice: 8.00, chance: 8, timeOfDay: "day" },
+			{ name: "Mahi Mahi", rarity: "Rare", emoji: "🐠", minSize: 8.0, maxSize: 45.0, basePrice: 45.00, perLbPrice: 9.00, chance: 8, timeOfDay: "day" },
+			{ name: "Barracuda", rarity: "Rare", emoji: "🐟", minSize: 5.0, maxSize: 30.0, basePrice: 40.00, perLbPrice: 8.50, chance: 7, timeOfDay: "sunrise" },
+			{ name: "Spot-Fin Porcupinefish", rarity: "Rare", emoji: "🐡", minSize: 1.5, maxSize: 6.0, basePrice: 55.00, perLbPrice: 10.00, chance: 8, timeOfDay: "sunset" },
+			{ name: "Electric Eel", rarity: "Rare", emoji: "🐍", minSize: 4.0, maxSize: 40.0, basePrice: 65.00, perLbPrice: 9.50, chance: 6, timeOfDay: "night" },
+			{ name: "Blue Marlin", rarity: "Rare", emoji: "🐟", minSize: 100.0, maxSize: 450.0, basePrice: 90.00, perLbPrice: 6.00, chance: 5, timeOfDay: "day" },
+			{ name: "Leopard Moray Eel", rarity: "Rare", emoji: "🐉", minSize: 6.0, maxSize: 28.0, basePrice: 70.00, perLbPrice: 11.00, chance: 6, timeOfDay: "night" },
+			{ name: "Sturgeon", rarity: "Rare", emoji: "🐟", minSize: 20.0, maxSize: 250.0, basePrice: 85.00, perLbPrice: 7.00, chance: 6, timeOfDay: "sunset" },
+			{ name: "Atlantic Sailfish", rarity: "Epic", emoji: "🦈", minSize: 40.0, maxSize: 110.0, basePrice: 150.00, perLbPrice: 12.00, chance: 4, timeOfDay: "sunrise" },
+			{ name: "Hammerhead Shark", rarity: "Epic", emoji: "🦈", minSize: 150.0, maxSize: 750.0, basePrice: 200.00, perLbPrice: 15.00, chance: 3, timeOfDay: "night" },
+			{ name: "Giant Manta Ray", rarity: "Epic", emoji: "🦇", minSize: 500.0, maxSize: 2200.0, basePrice: 180.00, perLbPrice: 10.00, chance: 3, timeOfDay: "sunset" },
+			{ name: "Ocean Sunfish", rarity: "Epic", emoji: "🛸", minSize: 200.0, maxSize: 1800.0, basePrice: 160.00, perLbPrice: 8.00, chance: 4, timeOfDay: "day" },
+			{ name: "Nautilus", rarity: "Epic", emoji: "🐚", minSize: 1.0, maxSize: 3.5, basePrice: 250.00, perLbPrice: 25.00, chance: 3.5, timeOfDay: "night" },
+			{ name: "Tiger Shark", rarity: "Epic", emoji: "🦈", minSize: 300.0, maxSize: 1400.0, basePrice: 220.00, perLbPrice: 14.00, chance: 2.5, timeOfDay: "night" },
+			{ name: "Coelacanth", rarity: "Legendary", emoji: "🐟", minSize: 60.0, maxSize: 180.0, basePrice: 500.00, perLbPrice: 20.00, chance: 1.5, timeOfDay: "night" },
+			{ name: "Great White Shark", rarity: "Legendary", emoji: "🦈", minSize: 800.0, maxSize: 3500.0, basePrice: 800.00, perLbPrice: 25.00, chance: 1.0, timeOfDay: "any" },
+			{ name: "Giant Oarfish", rarity: "Legendary", emoji: "🐉", minSize: 120.0, maxSize: 450.0, basePrice: 650.00, perLbPrice: 22.00, chance: 1.2, timeOfDay: "night" }, 
+			{ name: "Colossal Squid", rarity: "Legendary", emoji: "🦑", minSize: 400.0, maxSize: 1000.0, basePrice: 750.00, perLbPrice: 24.00, chance: 1.1, timeOfDay: "night" },
+			{ name: "Narwhal", rarity: "Legendary", emoji: "🦄", minSize: 1200.0, maxSize: 3200.0, basePrice: 900.00, perLbPrice: 18.00, chance: 0.8, timeOfDay: "sunrise" },
+			{ name: "Golden Sea Dragon", rarity: "Mythic", emoji: "🐉", minSize: 4.0, maxSize: 15.0, basePrice: 2000.00, perLbPrice: 50.00, chance: 0.4, timeOfDay: "sunrise" },
+			{ name: "Kraken Hatchling", rarity: "Mythic", emoji: "🐙", minSize: 450.0, maxSize: 2500.0, basePrice: 3000.00, perLbPrice: 60.00, chance: 0.1, timeOfDay: "night" },
+			{ name: "Stardust Leviathan", rarity: "Mythic", emoji: "🌌", minSize: 1000.0, maxSize: 5000.0, basePrice: 5000.00, perLbPrice: 80.00, chance: 0.05, timeOfDay: "sunset" }
+		];
+        
+        FISH_DATABASE.forEach(f => {
+            log_stats[f.name] = 0;
+        });
+        
+        function anim() {
+            t += spd;
+            let y_off = Math.sin(t) * amp;
+            let x_off = 0;
+            if (state === 'BITE') {
+                x_off = (Math.random() - 0.5) * 16;
+                y_off += (Math.random() - 0.5) * 16;
+            }
+            p_img.style.transform = `scale(${b_scl}) translate(${x_off}px, ${y_off}px)`;
+            if (state === 'REELING') {
+                upd_phys();
+            }
+
+            if(view_mode === 'AQUARIUM') {
+                upd_aquarium_physics();
+            }
+
+            requestAnimationFrame(anim);
+        }
+        
+        function cast() {
+            state = 'CASTING';
+            p_img.src = 'player_fishing.png';
+            
+            const wait_t = Math.random() * 4000 + 3000;
+            st_tmr = setTimeout(() => {
+                bite();
+            }, wait_t);
+        }
+        
+        function bite() {
+            state = 'BITE';
+            b_tmr = setTimeout(() => {
+                f_lost();
+            }, 1200);
+        }
+        
+        function reel() {
+            if (b_tmr) clearTimeout(b_tmr);
+            flsh.classList.add('flash-active');
+            setTimeout(() => { flsh.classList.remove('flash-active'); }, 300);
+            state = 'REELING';
+            
+            if (act_rod === 'carbon_rod' || act_rod === 'titanium_rod') {
+                rl_zn.style.height = '60px';
+            } else {
+                rl_zn.style.height = '50px';
+            }
+            trk_wdg.style.display = 'flex';
+            catch_prog = 40;
+            rl_y = 20;
+            rl_vel = 0;
+            f_y = 50;
+            f_tgt_y = 50;
+            
+            act_fish = get_fish();
+            if (act_fish.rarity === 'Epic') f_spd_f = 1.4;
+            else if (act_fish.rarity === 'Legendary') f_spd_f = 1.8;
+            else if (act_fish.rarity === 'Mythic') f_spd_f = 2.3;
+            else f_spd_f = 1.0;
+            
+            if (act_rod === 'titanium_rod') {
+                f_spd_f *= 0.8;
+            }
+            if (act_bait) {
+                bait_inv[act_bait]--;
+                if (bait_inv[act_bait] <= 0) {
+                    act_bait = null; 
+                }
+            }
+        }
+        
+        function upd_phys() {
+            if (pressing) {
+                rl_vel += lift;
+            } else {
+                rl_vel -= grav;
+            }
+            rl_vel = Math.max(-max_vel, Math.min(max_vel, rl_vel));
+            rl_y += rl_vel;
+            const bar_h_pct = (act_rod === 'carbon_rod' || act_rod === 'titanium_rod') ? 30 : 25;
+            const max_b_pct = 100 - bar_h_pct;
+            if (rl_y < 0) {
+                rl_y = 0;
+                rl_vel = 0;
+            }
+            if (rl_y > max_b_pct) {
+                rl_y = max_b_pct;
+                rl_vel = 0;
+            }
+            rl_zn.style.bottom = `${rl_y}%`;
+            f_mov_tmr--;
+            if (f_mov_tmr <= 0) {
+                f_tgt_y = Math.random() * 85 + 5; 
+                f_mov_tmr = Math.random() * 40 + 20; 
+            }
+            f_y += (f_tgt_y - f_y) * (0.05 * f_spd_f);
+            f_tgt.style.bottom = `${f_y}%`;
+            const mov_delta = (f_tgt_y - f_y);
+            if (Math.abs(mov_delta) > 1) {
+                f_tgt.style.transform = mov_delta > 0 ? 'scaleX(1) rotate(-10deg)' : 'scaleX(-1) rotate(10deg)';
+            }
+            const g_bot = rl_y;
+            const g_top = rl_y + bar_h_pct;
+            if (f_y >= g_bot && f_y <= g_top) {
+                catch_prog += 0.35;
+                rl_zn.style.background = 'rgba(46, 213, 115, 0.85)';
+            } else {
+                catch_prog -= 0.18;
+                rl_zn.style.background = 'rgba(255, 71, 87, 0.65)';
+            }
+            catch_prog = Math.max(0, Math.min(100, catch_prog));
+            set_prog(catch_prog);
+            if (catch_prog >= 100) {
+                catch_ok();
+            } else if (catch_prog <= 0) {
+                f_lost();
+            }
+        }
+        
+        function catch_ok() {
+            state = 'CATCH';
+            trk_wdg.style.display = 'none';
+            const caught = act_fish || get_fish();
+            const size = parseFloat((Math.random() * (caught.maxSize - caught.minSize) + caught.minSize).toFixed(1));
+            const price_calc = parseFloat((caught.basePrice + (size * caught.perLbPrice)).toFixed(2));
+            act_fish = {
+                id: crypto.randomUUID(),
+                name: caught.name,
+                rarity: caught.rarity,
+                emoji: caught.emoji,
+                weight: size,
+                price: price_calc
+            };
+            rew_rar.className = `rarity-badge rarity-${caught.rarity.toLowerCase()}`;
+            rew_rar.innerText = caught.rarity;
+            rew_img.src = "fish/" + caught.name.toLowerCase().replaceAll(" ", "_") + ".png";
+            rew_name.innerText = caught.name;
+            rew_spec.innerText = `Weight: ${size} lbs`;
+            rew_val.innerText = `Market Value: $${price_calc.toFixed(2)}`;
+            c_ovr.classList.add('active');
+        }
+        
+        function reset() {
+            state = 'IDLE';
+            p_img.src = 'player.png';
+            trk_wdg.style.display = 'none';
+            c_ovr.classList.remove('active');
+            act_fish = null;
+            if (st_tmr) clearTimeout(st_tmr);
+            if (b_tmr) clearTimeout(b_tmr);
+        }
+        
+        function f_lost() {
+            state = 'IDLE';
+            p_img.src = 'player.png';
+            trk_wdg.style.display = 'none';
+            act_fish = null;
+            if (st_tmr) clearTimeout(st_tmr);
+            if (b_tmr) clearTimeout(b_tmr);
+        }
+        
+        function get_fish() {
+			const activePeriod = getCurrentTimePeriod();
+            const mod_f_lst = FISH_DATABASE.map(fish => {
+                let cur_wt = fish.chance;
+				if (fish.timeOfDay && fish.timeOfDay !== "any") {
+					if (fish.timeOfDay !== activePeriod) {
+						cur_wt *= 0.15;
+					} else {
+						cur_wt *= 2.0;
+					}
+				}
+                if (act_bait === 'glow_worms') {
+                    if (fish.rarity === 'Uncommon' || fish.rarity === 'Rare') {
+                        cur_wt *= 2.0;
+                    }
+                } else if (act_bait === 'neon_lures') {
+                    if (fish.rarity === 'Epic' || fish.rarity === 'Legendary' || fish.rarity === 'Mythic') {
+                        cur_wt *= 3.0;
+                    }
+                }
+                return { fish, weight: cur_wt };
+            });
+            const tot_wt = mod_f_lst.reduce((sum, item) => sum + item.weight, 0);
+            let rand = Math.random() * tot_wt;
+            for (const item of mod_f_lst) {
+                if (rand < item.weight) {
+                    return item.fish;
+                }
+                rand -= item.weight;
+            }
+            return FISH_DATABASE[0]; 
+        }
+        
+        function keep_fish() {
+            if (act_fish) {
+                inv.push(act_fish);
+                log_stats[act_fish.name] += 1;
+                upd_hud();
+                show_inv();
+                show_best();
+            }
+            reset();
+        }
+        
+        function upd_hud() {
+            bal_txt.innerText = money.toFixed(2);
+            bkt_cnt.innerText = inv.length;
+        }
+        
+        function sell_one(id) {
+            const idx = inv.findIndex(item => item.id === id);
+            if (idx !== -1) {
+                money += inv[idx].price;
+                inv.splice(idx, 1);
+                upd_hud();
+                show_inv();
+                show_shop(); 
+            }
+        }
+
+        function add_to_aquarium(id) {
+            const idx = inv.findIndex(item => item.id === id);
+            if (idx !== -1) {
+                const fish = inv[idx];
+                const givenName = prompt(`Give a special name to your ${fish.name}:`, fish.name);
+                fish.customName = givenName && givenName.trim() !== "" ? givenName.trim() : fish.name;
+                
+                // Set boundary bounds for aquarium view
+                fish.x = Math.random() * 60 + 20; 
+                fish.y = Math.random() * 60 + 20; 
+                fish.speedX = (Math.random() * 0.4 + 0.1) * (Math.random() < 0.5 ? 1 : -1);
+                
+                aquarium.push(fish);
+                inv.splice(idx, 1);
+                
+                upd_hud();
+                show_inv();
+                build_aquarium_dom();
+            }
+        }
+        
+        function sell_all_f() {
+            if (inv.length === 0) return;
+            money += inv.reduce((sum, item) => sum + item.price, 0);
+            inv = [];
+            upd_hud();
+            show_inv();
+            show_shop();
+        }
+        
+        function show_inv() {
+            if (inv.length === 0) {
+                inv_mt.style.display = 'block';
+                inv_lst.innerHTML = '';
+                sell_all.style.display = 'none';
+                return;
+            }
+            inv_mt.style.display = 'none';
+            sell_all.style.display = 'block';
+            inv_lst.innerHTML = inv.map(item => `
+                <div class="inventory-item">
+                    <div class="item-details">
+                        <span class="item-icon"><img src="fish/${item.name.toLowerCase().replaceAll(" ","_")}.png" width="20" height="20" onerror="this.style.display='none'"></span>
+                        <div class="item-info">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-sub">${item.weight} lbs • ${item.rarity}</span>
+                            <span class="item-price">$${item.price.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="add-tank-btn" onclick="add_to_aquarium('${item.id}')">Add</button>
+                        <button class="sell-btn" onclick="sell_one('${item.id}')">Sell</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function show_best() {
+            const rarities = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"];
+            let html = '';
+            rarities.forEach(rarity => {
+                const f_in_rar = FISH_DATABASE.filter(f => f.rarity === rarity);
+                if (f_in_rar.length === 0) return;
+                html += `<div class="bestiary-section-title">${rarity}</div>`;
+                html += `<div class="bestiary-grid">`;
+                f_in_rar.forEach(fish => {
+                    const c_cnt = log_stats[fish.name] || 0;
+                    const unlocked = c_cnt > 0;
+                    if (unlocked) {
+                        html += `
+                            <div class="bestiary-card">
+                                <span class="bestiary-emoji"><img src="fish/${fish.name.toLowerCase().replaceAll(" ","_")}.png" width="20" height="20" onerror="this.style.display='none'"></span>
+                                <div class="bestiary-info">
+                                    <span class="bestiary-name">${fish.name}</span>
+                                    <span class="bestiary-count">Caught: ${c_cnt}</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="bestiary-card locked">
+                                <span class="bestiary-emoji">❓</span>
+                                <div class="bestiary-info">
+                                    <span class="bestiary-name">???????</span>
+                                    <span class="bestiary-count">Locked</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                html += `</div>`;
+            });
+            best_cnt.innerHTML = html;
+        }
+
+        /* Generate interactive elements for aquarium view */
+        function build_aquarium_dom() {
+            aqua_ovr.innerHTML = aquarium.map(fish => `
+                <div class="aquarium-fish" id="aqua-fish-${fish.id}" style="left: ${fish.x}%; top: ${fish.y}%;">
+                    <img src="fish/${fish.name.toLowerCase().replaceAll(" ","_")}.png" style="transform: scaleX(${fish.speedX > 0 ? 1 : -1});">
+                    <div class="fish-tooltip">
+                        <div class="tooltip-title">${fish.customName}</div>
+                        <div>Species: ${fish.name}</div>
+                        <div>Weight: ${fish.weight} lbs</div>
+                        <div>Tier: ${fish.rarity}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /* Update aquarium physics dynamically inside main simulation loop */
+        function upd_aquarium_physics() {
+            aquarium.forEach(fish => {
+                fish.x += fish.speedX;
+                
+                // Handle walls smoothly
+                if(fish.x > 88) {
+                    fish.x = 88;
+                    fish.speedX *= -1;
+                }
+                if(fish.x < 2) {
+                    fish.x = 2;
+                    fish.speedX *= -1;
+                }
+
+                const fishEl = document.getElementById(`aqua-fish-${fish.id}`);
+                if (fishEl) {
+                    fishEl.style.left = `${fish.x}%`;
+                    const imgEl = fishEl.querySelector('img');
+                    if (imgEl) {
+                        imgEl.style.transform = `scaleX(${fish.speedX > 0 ? 1 : -1})`;
+                    }
+                }
+            });
+        }
+
+        function toggle_aquarium_view() {
+            if (state === 'CASTING' || state === 'BITE' || state === 'REELING') {
+                f_lost();
+            }
+            m_ovr.classList.remove('active');
+            
+            if(view_mode === 'FISHING') {
+                view_mode = 'AQUARIUM';
+                p_img.style.visibility = 'hidden';
+                p_img.style.opacity = '0';
+                aqua_ovr.classList.add('active');
+                aqua_btn.classList.add('active-view');
+                build_aquarium_dom();
+            } else {
+                view_mode = 'FISHING';
+                p_img.style.visibility = 'visible';
+                p_img.style.opacity = '1';
+                aqua_ovr.classList.remove('active');
+                aqua_btn.classList.remove('active-view');
+            }
+        }
+        
+        const SHOP_UPGRADES_DB = {
+            rods: [
+                { id: 'carbon_rod', name: 'Carbon Fiber Rod', cost: 1500.00, desc: 'Increases green bar tracking catch size by +20%.', icon: '🎣' },
+                { id: 'titanium_rod', name: 'Titanium Reel Rod', cost: 5000.00, desc: 'Permanently slows target fish speed and jerking by 20%.', icon: '🦾' }
+            ],
+            baits: [
+                { id: 'glow_worms', name: 'Glow Worm Pack (x5)', cost: 250.00, qty: 5, desc: 'Doubles the spawn rates of Uncommon & Rare fish.', icon: '🪱' },
+                { id: 'neon_lures', name: 'Neon Lure Pack (x3)', cost: 750.00, qty: 3, desc: 'Grants 3x attraction multiplier for Epic, Legendary, & Mythic tiers.', icon: '✨' }
+            ]
+        };
+        
+        function buy_rod(id, cost) {
+            if (money >= cost && !own_rods.includes(id)) {
+                money -= cost;
+                own_rods.push(id);
+                act_rod = id; 
+                upd_hud();
+                show_shop();
+            }
+        }
+        
+        function buy_bait(id, cost, qty) {
+            if (money >= cost) {
+                money -= cost;
+                bait_inv[id] += qty;
+                
+                act_bait = id;
+                upd_hud();
+                show_shop();
+            }
+        }
+        
+        function tog_bait(id) {
+            if (bait_inv[id] > 0) {
+                act_bait = (act_bait === id) ? null : id;
+                show_shop();
+            }
+        }
+        
+        function show_shop() {
+            rod_cnt.innerHTML = SHOP_UPGRADES_DB.rods.map(rod => {
+                const is_owned = own_rods.includes(rod.id);
+                const is_equipped = act_rod === rod.id;
+                const affordable = money >= rod.cost;
+                let btn_html = '';
+                if (is_owned) {
+                    btn_html = `<button class="shop-buy-btn owned">${is_equipped ? 'Equipped' : 'Owned'}</button>`;
+                } else {
+                    btn_html = `<button class="shop-buy-btn" ${!affordable ? 'disabled' : ''} onclick="buy_rod('${rod.id}', ${rod.cost})">$${rod.cost.toFixed(2)}</button>`;
+                }
+                return `
+                    <div class="shop-item">
+                        <div class="shop-item-details">
+                            <span class="shop-item-icon">${rod.icon}</span>
+                            <div class="shop-item-info">
+                                <span class="shop-item-name">${rod.name}</span>
+                                <span class="shop-item-desc">${rod.desc}</span>
+                            </div>
+                        </div>
+                        ${btn_html}
+                    </div>
+                `;
+            }).join('');
+            
+            bait_cnt.innerHTML = SHOP_UPGRADES_DB.baits.map(bait => {
+                const stock = bait_inv[bait.id] || 0;
+                const is_selected = act_bait === bait.id;
+                const affordable = money >= bait.cost;
+                return `
+                    <div class="shop-item">
+                        <div class="shop-item-details">
+                            <span class="shop-item-icon">${bait.icon}</span>
+                            <div class="shop-item-info">
+                                <span class="shop-item-name">${bait.name} (Stock: ${stock})</span>
+                                <span class="shop-item-desc">${bait.desc}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+                            <button class="shop-buy-btn" ${!affordable ? 'disabled' : ''} onclick="buy_bait('${bait.id}', ${bait.cost}, ${bait.qty})">Buy ($${bait.cost})</button>
+                            ${stock > 0 ? `
+                                <button class="sell-btn" style="padding: 3px 8px; font-size:10px; background:${is_selected ? '#2ed573' : 'transparent'}; color:${is_selected ? '#fff' : '#2ed573'}" onclick="tog_bait('${bait.id}')">
+                                    ${is_selected ? 'Active' : 'Equip'}
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function act_start() {
+            if (m_ovr.classList.contains('active') || view_mode === 'AQUARIUM') return;
+            pressing = true;
+            if (state === 'IDLE') {
+                cast();
+            } else if (state === 'CASTING') {
+                f_lost();
+            } else if (state === 'BITE') {
+                reel();
+            }
+        }
+        
+        function act_end() {
+            pressing = false;
+        }
+        
+        function open_menu(tab_type) {
+            if (state === 'CASTING' || state === 'BITE' || state === 'REELING') {
+                f_lost();
+            }
+            if(view_mode === 'AQUARIUM') {
+                toggle_aquarium_view(); // Reset view back to regular fishing layer setup
+            }
+            m_ovr.classList.add('active');
+            t_inv.classList.remove('active');
+            t_best.classList.remove('active');
+            t_shop.classList.remove('active');
+            p_inv.classList.remove('active');
+            p_best.classList.remove('active');
+            p_shop.classList.remove('active');
+            if (tab_type === 'bag') {
+                m_ttl.innerText = "Adventure Bag";
+                t_inv.style.display = "block";
+                t_best.style.display = "block";
+                t_shop.style.display = "none";
+                t_inv.classList.add('active');
+                p_inv.classList.add('active');
+                show_inv();
+            } else if (tab_type === 'shop') {
+                m_ttl.innerText = "Fisherman Outpost";
+                t_inv.style.display = "none";
+                t_best.style.display = "none";
+                t_shop.style.display = "block";
+                t_shop.classList.add('active');
+                p_shop.classList.add('active');
+                show_shop();
+            }
+        }
+        
+        upd_hud();
+        show_inv();
+        show_best();
+        anim();
+        
+        document.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        const st_menu = document.getElementById('startMenu');
+        const pl_btn = document.getElementById('playBtn');
+        let started = false; 
+        
+        pl_btn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            
+            st_menu.classList.add('hidden');
+            started = true;
+            g_cnt.addEventListener('mousedown', (e) => {
+                if (state === 'CATCH' || m_ovr.classList.contains('active') || view_mode === 'AQUARIUM') return;
+                e.preventDefault();
+                act_start();
+            });
+            window.addEventListener('mouseup', () => {
+                act_end();
+            });
+            g_cnt.addEventListener('touchstart', (e) => {
+                if (state === 'CATCH' || m_ovr.classList.contains('active') || view_mode === 'AQUARIUM') return;
+                e.preventDefault();
+                act_start();
+            }, { passive: false });
+            window.addEventListener('touchend', () => {
+                act_end();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (state === 'CATCH' || m_ovr.classList.contains('active') || view_mode === 'AQUARIUM') return;
+                    if (!pressing) {
+                        act_start();
+                    }
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') {
+                    act_end();
+                }
+            });
+            kp_btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                keep_fish();
+            });
+            inv_btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                open_menu('bag');
+            });
+            shp_btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                open_menu('shop');
+            });
+            aqua_btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggle_aquarium_view();
+            });
+            cls_btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                m_ovr.classList.remove('active');
+            });
+            t_inv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                t_inv.classList.add('active');
+                t_best.classList.remove('active');
+                p_inv.classList.add('active');
+                p_best.classList.remove('active');
+            });
+            t_best.addEventListener('click', (e) => {
+                e.stopPropagation();
+                t_best.classList.add('active');
+                t_inv.classList.remove('active');
+                p_best.classList.add('active');
+                p_inv.classList.remove('active');
+                show_best();
+            });
+            sell_all.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sell_all_f();
+            });
+            
+            const bg_vid = document.getElementById('bgVideo');
+            if (bg_vid) bg_vid.play().catch(() => {});
+        });
+    </script>
+</body>
+</html>
