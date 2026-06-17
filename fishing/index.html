@@ -31,49 +31,48 @@
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
         }
 
-        /* Continuous Day-Night Filter Animation (5-minute loop = 300 seconds) */
         @keyframes dayNightCycle {
-            /* 06:00 AM - Sunrise (Warm, low-angle orange hue) */
+            /* 06:00 AM */s
             0% {
                 filter: brightness(0.8) contrast(1.1) saturate(1.2) hue-rotate(-15deg) sepia(0.2);
             }
-            /* 08:30 AM - Morning (Clearer skies) */
+            /* 08:30 AM */
             10% {
                 filter: brightness(0.95) contrast(1.0) saturate(1.05) hue-rotate(0deg) sepia(0);
             }
-            /* 12:00 PM - Noon (Unfiltered natural day) */
+            /* 12:00 PM (Unfiltered) */
             25% {
                 filter: none;
             }
-            /* 05:00 PM - Afternoon shading */
+            /* 05:00 PM */
             45% {
                 filter: none;
             }
-            /* 06:30 PM - Golden Hour / Sunset start */
+            /* 06:30 PM */
             52% {
                 filter: brightness(0.8) contrast(1.15) saturate(1.5) hue-rotate(-25deg) sepia(0.35);
             }
-            /* 07:30 PM - Late Sunset / Dusk (Deep red/purple) */
+            /* 07:30 PM */
             58% {
                 filter: brightness(0.6) contrast(1.1) saturate(1.1) hue-rotate(0deg) sepia(0.5);
             }
-            /* 08:30 PM - Transition to Night (Cool deep blues) */
+            /* 08:30 PM */
             65% {
                 filter: brightness(0.3) contrast(0.9) saturate(0.6) hue-rotate(0deg) sepia(0.15);
             }
-            /* 12:00 AM - Midnight / Deep Night */
+            /* 12:00 AM */
             75% {
                 filter: brightness(0.18) contrast(0.8) saturate(0.4) hue-rotate(0deg) sepia(0.1);
             }
-            /* 04:30 AM - Late Night / Pre-dawn */
+            /* 04:30 AM */
             90% {
                 filter: brightness(0.18) contrast(0.8) saturate(0.4) hue-rotate(0deg) sepia(0.1);
             }
-            /* 05:30 AM - Dawn breaking */
+            /* 05:30 AM */
             95% {
                 filter: brightness(0.5) contrast(0.95) saturate(0.8) hue-rotate(-10deg) sepia(0.25);
             }
-            /* 06:00 AM - Complete 100% Loop Reset */
+            /* 06:00 AM */
             100% {
                 filter: brightness(0.8) contrast(1.1) saturate(1.2) hue-rotate(-15deg) sepia(0.2);
             }
@@ -750,7 +749,6 @@
             box-shadow: 0 4px 10px rgba(46, 213, 115, 0.2);
         }
 
-        /* Aquarium Screen Overlay Style */
         .aquarium-overlay {
             position: absolute;
             top: 0;
@@ -782,7 +780,6 @@
             object-fit: contain;
             transition: transform 0.2s linear;
         }
-        /* Tooltip style */
         .fish-tooltip {
             position: absolute;
             background: rgba(0, 0, 0, 0.85);
@@ -818,6 +815,7 @@
         <div class="aquarium-overlay" id="aquariumOverlay"></div>
 
         <img class="player-overlay" id="player" src="player.png" alt="Player View">
+		<img class="player-overlay" id="aquarium" src="aquarium.jpg" alt="Aquarium background" style="display:none;">
         <div class="flash-overlay" id="flash"></div>
         <div class="ui-layer">
             <div class="top-hud">
@@ -897,6 +895,7 @@
     </div>
     <script>
         const p_img = document.getElementById('player');
+        const a_img = document.getElementById('aquarium');
         const g_cnt = document.getElementById('gameContainer');
         const flsh = document.getElementById('flash');
         
@@ -989,7 +988,7 @@
             let cycleProgress = (elapsed % 300) / 300; // 0.0 to 1.0 representation of the 5-min cycle
             
             // Assume 0% starts at 06:00 AM (Sunrise).
-            let totalMinutesInDay = 1440; // 24 hours * 60 minutes
+            let totalMinutesInDay = 1440; // 24*60
             let currentMinutes = (360 + (cycleProgress * totalMinutesInDay)) % totalMinutesInDay;
             
             let hours = Math.floor(currentMinutes / 60);
@@ -998,7 +997,7 @@
             
             let ampm = hours >= 12 ? 'PM' : 'AM';
             let displayHours = hours % 12;
-            displayHours = displayHours ? displayHours : 12; // convert 0 to 12
+            displayHours = displayHours ? displayHours : 12; //
             let displayMinutes = minutes < 10 ? '0' + minutes : minutes;
             let displayHoursStr = displayHours < 10 ? '0' + displayHours : displayHours;
             
@@ -1403,7 +1402,6 @@
             best_cnt.innerHTML = html;
         }
 
-        /* Generate interactive elements for aquarium view */
         function build_aquarium_dom() {
             aqua_ovr.innerHTML = aquarium.map(fish => `
                 <div class="aquarium-fish" id="aqua-fish-${fish.id}" style="left: ${fish.x}%; top: ${fish.y}%;">
@@ -1418,12 +1416,10 @@
             `).join('');
         }
 
-        /* Update aquarium physics dynamically inside main simulation loop */
         function upd_aquarium_physics() {
             aquarium.forEach(fish => {
                 fish.x += fish.speedX;
                 
-                // Handle walls smoothly
                 if(fish.x > 88) {
                     fish.x = 88;
                     fish.speedX *= -1;
@@ -1454,6 +1450,7 @@
                 view_mode = 'AQUARIUM';
                 p_img.style.visibility = 'hidden';
                 p_img.style.opacity = '0';
+				a_img.style.display='block';
                 aqua_ovr.classList.add('active');
                 aqua_btn.classList.add('active-view');
                 build_aquarium_dom();
@@ -1461,6 +1458,7 @@
                 view_mode = 'FISHING';
                 p_img.style.visibility = 'visible';
                 p_img.style.opacity = '1';
+				a_img.style.display='none';
                 aqua_ovr.classList.remove('active');
                 aqua_btn.classList.remove('active-view');
             }
@@ -1621,7 +1619,7 @@
         
         pl_btn.addEventListener('click', (e) => {
             e.stopPropagation(); 
-            
+            loadGame();
             st_menu.classList.add('hidden');
             started = true;
             g_cnt.addEventListener('mousedown', (e) => {
@@ -1697,6 +1695,58 @@
             const bg_vid = document.getElementById('bgVideo');
             if (bg_vid) bg_vid.play().catch(() => {});
         });
+
+		const SAVE_KEY = 'FPF_data';
+
+		function saveGame() {
+			try {
+				const gameState = {
+					money: money,
+					inv: inv,
+					aquarium: aquarium, 
+					log_stats: log_stats,
+					own_rods: own_rods,
+					act_rod: act_rod,
+					bait_inv: bait_inv,
+					act_bait: act_bait
+				};
+				
+				localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+			} catch (error) {
+				console.error("Failed to save game state:", error);
+			}
+		}
+
+		function loadGame() {
+			try {
+				const savedData = localStorage.getItem(SAVE_KEY);
+				if (!savedData) {
+					return false; 
+				}
+				
+				const gameState = JSON.parse(savedData);
+				money=gameState.money;
+				inv=gameState.inv;
+				aquarium=gameState.aquarium;
+				log_stats=gameState.log_stats;
+				own_rods=gameState.own_rods;
+				act_rod=gameState.act_rod;
+				bait_inv=gameState.bait_inv;
+				act_bait=gameState.act_bait;
+				upd_hud(); 
+				return true;
+			} catch (error) {
+				return false;
+			}
+		}
+
+		function resetGameProfile() {
+			if (confirm("Are you sure you want to delete your save file? This cannot be undone.")) {
+				localStorage.removeItem(SAVE_KEY);
+				window.location.reload(); 
+			}
+		}
+		setInterval(saveGame,5000);
     </script>
 </body>
 </html>
