@@ -21,35 +21,40 @@
 <p>There are 25 commands:</p>
 <table>
   <tr><th>Number</th><th>Symbol</th><th>Name</th><th>Description</th></tr>
-  <tr><td>0</td><td><span>a</span></td><td>NOP</td><td>Performs no action</td></tr>
-  <tr><td>1</td><td><span>b</span></td><td>IN</td><td>Requests a user input through the number input panel. The accumulator will be set to the user's input.</td></tr>
-  <tr><td>2</td><td><span>c</span></td><td>OUT</td><td>Sets the number output panel to the accumulator's value.</td></tr>
-  <tr><td>3</td><td><span>d</span></td><td>LOAD</td><td>Will read digits 2 and 3 as a line number, and set the accumulator value to whatever data is at that line number.</td></tr>
-  <tr><td>4</td><td><span>e</span></td><td>SET</td><td>Will read digits 2 and 3 as a line number, and set the data at that line number to the accumulator's value.</td></tr>
-  <tr><td>5</td><td><span>f</span></td><td>ILOAD</td><td>Reads digits 2 and 3 as a line number, then reads digits 2 and 3 of the data at that line number as a new line number, and sets the accumulator value to whatever data is at that new line number. This may seem useless but it is necessary for specific things.</td></tr>
-  <tr><td>6</td><td><span>g</span></td><td>ISET</td><td>Same as ILOAD but sets: reads digits 2 and 3, reads digits 2 and 3 of that line number, and sets the value of that new line number to the accumulator value.</td></tr>
-  <tr><td>7</td><td><span>h</span></td><td>ADD</td><td>Reads digits 2 and 3 as a line number and will add the value at that line to the accumulator. If too big it will wrap around to 0.</td></tr>
-  <tr><td>8</td><td><span>i</span></td><td>SUB</td><td>Reads digits 2 and 3 as a line number and will subtract the value at that line from the accumulator. If too small it will wrap around to the highest possible number (25^3=15625).</td></tr>
-  <tr><td>9</td><td><span>j</span></td><td>MULT</td><td>Reads digits 2 and 3 as a line number and will multiply the accumulator by the value at that line. If too big it will wrap around to 0.</td></tr>
-  <tr><td>10</td><td><span>k</span></td><td>DIV</td><td>Reads digits 2 and 3 as a line number and divides the accumulator by the value at that line. The result will be floored. If an attempt to divide by 0 is made, it will simply perform no action.</td></tr>
-  <tr><td>11</td><td><span>l</span></td><td>ADDN</td><td>Reads digits 2 and 3 as a number and adds that number to the accumulator. If too big it will wrap around to 0.</td></tr>
-  <tr><td>12</td><td><span>m</span></td><td>SUBN</td><td>Reads digits 2 and 3 as a number and subtracts that number from the accumulator. If too small it will wrap around to 15625.</td></tr>
-  <tr><td>13</td><td><span>n</span></td><td>MULTN</td><td>Reads digits 2 and 3 as a number and multiplies the accumulator by that number. If too big it will wrap around to 0.</td></tr>
-  <tr><td>14</td><td><span>o</span></td><td>DIVN</td><td>Reads digits 2 and 3 as a  number and divides the accumulator by that number. The result will be floored. If an attempt to divide by 0 is made, it will perform no action.</td></tr>
-  <tr><td>15</td><td><span>p</span></td><td>JUMP</td><td>Jumps straight to the line number of digits 2 and 3.</td></tr>
-  <tr><td>16</td><td><span>q</span></td><td>JUMPZ</td><td>Will JUMP only if the accumulator is 0.</td></tr>
-  <tr><td>17</td><td><span>r</span></td><td>JUMPNZ</td><td>Will JUMP only if the accumulator is not 0.</td></tr>
-  <tr><td>18</td><td><span>s</span></td><td>CALL</td><td>Pushes the current line number to an imaginary stack, and jumps to the line number in digits 2 and 3. Used alongside RET.</td></tr>
-  <tr><td>19</td><td><span>t</span></td><td>RET</td><td>Retrieves the latest value from the stack (and removes it) and jumps back to that line.</td></tr>
-  <tr><td>20</td><td><span>u</span></td><td>DRAW</td><td>Treats the current accumulator as an RGB value, the second digit as X and the third digit as Y and draws it on the TV.</td></tr>
-  <tr><td>21</td><td><span>v</span></td><td>CLS</td><td>Clears the screen.</td></tr>
-  <tr><td>22</td><td><span>w</span></td><td>RND</td><td>Loads a random value into the accumulator.</td></tr>
-  <tr><td>23</td><td><span>x</span></td><td>SLP</td><td>Reads digits 2 and 3 as a number, and pauses the program for that number * 100 milliseconds.</td></tr>
-  <tr><td>24</td><td><span>y</span></td><td>HALT</td><td>Stops the program.</td></tr>
+  <tr><td>0</td><td><span>A</span></td><td>NOP</td><td>Performs no action</td></tr>
+  <tr><td>1</td><td><span>B</span></td><td>IN</td><td>Requests a user input through the number input panel. The accumulator will be set to the user's input.</td></tr>
+  <tr><td>2</td><td><span>C</span></td><td>OUT</td><td>Sets the number output panel to the accumulator's value.</td></tr>
+  <tr><td>3</td><td><span>D</span></td><td>LOAD</td><td>Will read digits 2 and 3 as a line number, and set the accumulator value to whatever data is at that line number.</td></tr>
+  <tr><td>4</td><td><span>E</span></td><td>SET</td><td>Will read digits 2 and 3 as a line number, and set the data at that line number to the accumulator's value.</td></tr>
+  <tr><td>5</td><td><span>F</span></td><td>ILOAD</td><td>Reads digits 2 and 3 as a line number, then reads digits 2 and 3 of the data at that line number as a new line number, and sets the accumulator value to whatever data is at that new line number. This may seem useless but it is necessary for specific things.</td></tr>
+  <tr><td>6</td><td><span>G</span></td><td>ISET</td><td>Same as ILOAD but sets: reads digits 2 and 3, reads digits 2 and 3 of that line number, and sets the value of that new line number to the accumulator value.</td></tr>
+  <tr><td>7</td><td><span>H</span></td><td>ADD</td><td>Reads digits 2 and 3 as a line number and will add the value at that line to the accumulator. If too big it will wrap around to 0.</td></tr>
+  <tr><td>8</td><td><span>I</span></td><td>SUB</td><td>Reads digits 2 and 3 as a line number and will subtract the value at that line from the accumulator. If too small it will wrap around to the highest possible number (25^3=15625).</td></tr>
+  <tr><td>9</td><td><span>J</span></td><td>MULT</td><td>Reads digits 2 and 3 as a line number and will multiply the accumulator by the value at that line. If too big it will wrap around to 0.</td></tr>
+  <tr><td>10</td><td><span>K</span></td><td>DIV</td><td>Reads digits 2 and 3 as a line number and divides the accumulator by the value at that line. The result will be floored. If an attempt to divide by 0 is made, it will simply perform no action.</td></tr>
+  <tr><td>11</td><td><span>L</span></td><td>ADDN</td><td>Reads digits 2 and 3 as a number and adds that number to the accumulator. If too big it will wrap around to 0.</td></tr>
+  <tr><td>12</td><td><span>M</span></td><td>SUBN</td><td>Reads digits 2 and 3 as a number and subtracts that number from the accumulator. If too small it will wrap around to 15625.</td></tr>
+  <tr><td>13</td><td><span>N</span></td><td>MULTN</td><td>Reads digits 2 and 3 as a number and multiplies the accumulator by that number. If too big it will wrap around to 0.</td></tr>
+  <tr><td>14</td><td><span>O</span></td><td>DIVN</td><td>Reads digits 2 and 3 as a  number and divides the accumulator by that number. The result will be floored. If an attempt to divide by 0 is made, it will perform no action.</td></tr>
+  <tr><td>15</td><td><span>P</span></td><td>JUMP</td><td>Jumps straight to the line number of digits 2 and 3.</td></tr>
+  <tr><td>16</td><td><span>Q</span></td><td>JUMPZ</td><td>Will JUMP only if the accumulator is 0.</td></tr>
+  <tr><td>17</td><td><span>R</span></td><td>JUMPNZ</td><td>Will JUMP only if the accumulator is not 0.</td></tr>
+  <tr><td>18</td><td><span>S</span></td><td>CALL</td><td>Pushes the current line number to an imaginary stack, and jumps to the line number in digits 2 and 3. Used alongside RET.</td></tr>
+  <tr><td>19</td><td><span>T</span></td><td>RET</td><td>Retrieves the latest value from the stack (and removes it) and jumps back to that line.</td></tr>
+  <tr><td>20</td><td><span>U</span></td><td>DRAW</td><td>Treats the current accumulator as an RGB value, the second digit as X and the third digit as Y and draws it on the TV. Actually no, thats not how it works. Digits 2 and 3 represent a line number. The X position is at that line number (between 0 and 25) and the y position is at that line number +1.</td></tr>
+  <tr><td>21</td><td><span>V</span></td><td>CLS</td><td>Clears the screen.</td></tr>
+  <tr><td>22</td><td><span>W</span></td><td>RND</td><td>Loads a random value into the accumulator.</td></tr>
+  <tr><td>23</td><td><span>X</span></td><td>SLP</td><td>Reads digits 2 and 3 as a number, and pauses the program for that number * 100 milliseconds.</td></tr>
+  <tr><td>24</td><td><span>Y</span></td><td>HALT</td><td>Stops the program.</td></tr>
 </table>
 <h3>Challenges</h3>
 <p>Now that you know all this, you can make anything. You probably dont know what, though, so here are some challenges.</p>
 <ol>
+  <li>A program that gets 1 input and returns 1 if it is even and 0 if it is odd.</li>
   <li>A program that will get 2 inputs from the user and return which one is larger.</li>
-  <li></li>
+  <li>Get the user's input and create a countdown timer in seconds, starting from the users number and stopping when it gets to 0.</li>
+  <li>Get a users input and calculate and ouput the factorial</li>
+  <li>Fill the screen with every second pixel white</li>
+  <li>Calculate pi, outputting one digit at a time.</li>
 </ol>
+
