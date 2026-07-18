@@ -1,3 +1,13 @@
+<style>
+  @font-face {
+        font-family: 'segment';
+        src: url('segment-mono.woff') format('woff');
+    }
+  span{
+    font-family:'segment';
+  }
+</style>
+
 <h1>Pently instructions</h1>
 <a href="/pently/index.html">Go to pently</a>
 <a href="/index.html">Go home</a>
@@ -5,4 +15,41 @@
 <p>Pently uses arrow keys and clicking for all controls. Left and right arrows will navigate between panels. You can see the currently active panel as it has a white underline. If you navigate too far in one direction it will loop to the start. Up and down arrows will increase and decrease values respectively. Segmented panels (the blue displays) use a base 25 number system, however the green matrix displays represent this as 2 base 5 digits instead, which is why you can see they are grouped in twos. These number systems may be confusing, however after using the computer for long enough you will start to learn and remember the different numbers. Clicking is also used as a control on the big red button, and the small buttons and sliders down the bottom.</p>
 <h3>Layout</h3>
 <p>Pently is made of 3 sections: the left TV-style display, the middle tower (also consisting of the red button), and the right tower; sections 1, 2 and 3 respectively. Sections 2 is where all of your input is done. You will never interact with panels outside of section 2, they are just for your reference. Section 1 is the main display output for the program. You can use commands in your program to draw things on the TV. Section 3 shows the entire programs code. It is split into 2 columns: a 2 digit base 25 number and a 3 digit base 25 number. The first column represents the line number, and the second column is the actual instruction at that line. The white line is the currently selected line. Section 2 contains 4 rows, + the button. The first row contains a long green panel and a short blue panel. These both show the same thing: the number currently in the accumulator. The green display shows the accumulator value in 6 base 5 digits (think of it as 3 base 5 pairs), while the blue display shows 3 base 25 digits. These can be useful at different times for debugging, and they are only for reference, you cannot edit them. The next row is the address line. This panel represents the current line that is active in the program memory. You can see that if you increase and decrease this value, the white line in section 3 will change. Note that this panel is the base 5 representation of the first column of section 3. The next row shows the current data at the address line. By default all data at every line is 000 (|| || ||). However, by editing this row (which you can edit digit by digit for convenience) you will notice the data change in section 3 at the white line. The next row contains 2 panels. The left panel is the number input panel. When running a program, one such instruction is to request a number input. Only when this instruction is running will that panel light up, allowing you to enter a number of your choice digit by digit. The right panel is the number output. As an alternative to outputting to the TV, simpler programs can also output just a number, which will be shown here. Finally there is the button. This button does multiple tasks. The main task is to start and stop the program. Clicking the button will push it down and the program will run. It will stop automatically if a stop instruction is recieved, or if you press the red button again. Additionally the red button is also used to submit number inputs. When inputting a number during an input instruction, you can press the red button to submit and code will continue running. Finally, there is the control buttons down the bottom. The slider on the left controls the speed of the running a program. Sliding it to the far right will run the program on max speed, however it is useful to slow it down when running the program for the first time in case something goes wrong and your program starts overwriting its own code. The save and load buttons are simply used to download your programs. Pressing save will save <i>everything</i>, including what is on the screen, and what line you are currently at, so be careful when you save. Your program will download as a file which you can upload back later or share with someone.</p>
-<h3>Instructions</h3>
+<h3>Data</h3>
+<p>It is important to understand that each line in the memory could represent an instruction, or just arbitrary data. However, the machine does not know what it is, so it will assume every line is an instruction. So when storing data, you should store it at far line numbers, so that it wont intefere with the program.</p>
+<p>Each piece of data is made up of 3 digits. If it is an instruction, then the first digit states what the instruction is, and the second 2 are commands for that instruction. Not all instructions require 2 commands.</p>
+<p>There are 25 commands:</p>
+<table>
+  <tr><th>Number</th><th>Symbol</th><th>Name</th><th>Description</th></tr>
+  <tr><td>0</td><td><span>a</span></td><td>NOP</td><td>Performs no action</td></tr>
+  <tr><td>1</td><td><span>b</span></td><td>IN</td><td>Requests a user input through the number input panel. The accumulator will be set to the user's input.</td></tr>
+  <tr><td>2</td><td><span>c</span></td><td>OUT</td><td>Sets the number output panel to the accumulator's value.</td></tr>
+  <tr><td>3</td><td><span>d</span></td><td>LOAD</td><td>Will read digits 2 and 3 as a line number, and set the accumulator value to whatever data is at that line number.</td></tr>
+  <tr><td>4</td><td><span>e</span></td><td>SET</td><td>Will read digits 2 and 3 as a line number, and set the data at that line number to the accumulator's value.</td></tr>
+  <tr><td>5</td><td><span>f</span></td><td>ILOAD</td><td>Reads digits 2 and 3 as a line number, then reads digits 2 and 3 of the data at that line number as a new line number, and sets the accumulator value to whatever data is at that new line number. This may seem useless but it is necessary for specific things.</td></tr>
+  <tr><td>6</td><td><span>g</span></td><td>ISET</td><td>Same as ILOAD but sets: reads digits 2 and 3, reads digits 2 and 3 of that line number, and sets the value of that new line number to the accumulator value.</td></tr>
+  <tr><td>7</td><td><span>h</span></td><td>ADD</td><td>Reads digits 2 and 3 as a line number and will add the value at that line to the accumulator. If too big it will wrap around to 0.</td></tr>
+  <tr><td>8</td><td><span>i</span></td><td>SUB</td><td>Reads digits 2 and 3 as a line number and will subtract the value at that line from the accumulator. If too small it will wrap around to the highest possible number (25^3=15625).</td></tr>
+  <tr><td>9</td><td><span>j</span></td><td>MULT</td><td>Reads digits 2 and 3 as a line number and will multiply the accumulator by the value at that line. If too big it will wrap around to 0.</td></tr>
+  <tr><td>10</td><td><span>k</span></td><td>DIV</td><td>Reads digits 2 and 3 as a line number and divides the accumulator by the value at that line. The result will be floored. If an attempt to divide by 0 is made, it will simply perform no action.</td></tr>
+  <tr><td>11</td><td><span>l</span></td><td>ADDN</td><td>Reads digits 2 and 3 as a number and adds that number to the accumulator. If too big it will wrap around to 0.</td></tr>
+  <tr><td>12</td><td><span>m</span></td><td>SUBN</td><td>Reads digits 2 and 3 as a number and subtracts that number from the accumulator. If too small it will wrap around to 15625.</td></tr>
+  <tr><td>13</td><td><span>n</span></td><td>MULTN</td><td>Reads digits 2 and 3 as a number and multiplies the accumulator by that number. If too big it will wrap around to 0.</td></tr>
+  <tr><td>14</td><td><span>o</span></td><td>DIVN</td><td>Reads digits 2 and 3 as a  number and divides the accumulator by that number. The result will be floored. If an attempt to divide by 0 is made, it will perform no action.</td></tr>
+  <tr><td>15</td><td><span>p</span></td><td>JUMP</td><td>Jumps straight to the line number of digits 2 and 3.</td></tr>
+  <tr><td>16</td><td><span>q</span></td><td>JUMPZ</td><td>Will JUMP only if the accumulator is 0.</td></tr>
+  <tr><td>17</td><td><span>r</span></td><td>JUMPNZ</td><td>Will JUMP only if the accumulator is not 0.</td></tr>
+  <tr><td>18</td><td><span>s</span></td><td>CALL</td><td>Pushes the current line number to an imaginary stack, and jumps to the line number in digits 2 and 3. Used alongside RET.</td></tr>
+  <tr><td>19</td><td><span>t</span></td><td>RET</td><td>Retrieves the latest value from the stack (and removes it) and jumps back to that line.</td></tr>
+  <tr><td>20</td><td><span>u</span></td><td>DRAW</td><td>Treats the current accumulator as an RGB value, the second digit as X and the third digit as Y and draws it on the TV.</td></tr>
+  <tr><td>21</td><td><span>v</span></td><td>CLS</td><td>Clears the screen.</td></tr>
+  <tr><td>22</td><td><span>w</span></td><td>RND</td><td>Loads a random value into the accumulator.</td></tr>
+  <tr><td>23</td><td><span>x</span></td><td>SLP</td><td>Reads digits 2 and 3 as a number, and pauses the program for that number * 100 milliseconds.</td></tr>
+  <tr><td>24</td><td><span>y</span></td><td>HALT</td><td>Stops the program.</td></tr>
+</table>
+<h3>Challenges</h3>
+<p>Now that you know all this, you can make anything. You probably dont know what, though, so here are some challenges.</p>
+<ol>
+  <li>A program that will get 2 inputs from the user and return which one is larger.</li>
+  <li></li>
+</ol>
